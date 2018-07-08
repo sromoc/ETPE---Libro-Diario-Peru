@@ -1,0 +1,1866 @@
+*&---------------------------------------------------------------------*
+*& Report  ZFI_LIBRODIARIO_PE
+*&
+*&---------------------------------------------------------------------*
+REPORT zfi_librodiario_pe.
+TABLES: bkpf, bseg, bsec, zmant_tipo_pe.
+
+RANGES: blart_080100 FOR bkpf-blart.
+RANGES: blart_080200 FOR bkpf-blart.
+RANGES: serv_basicos FOR bsak-lifnr.
+
+"DATA
+"fecha
+
+DATA: docum(10).
+RANGES: blart_140100 FOR bkpf-blart.
+TYPE-POOLS slis.
+CONSTANTS: formname_top_of_page2
+TYPE  slis_formname VALUE 'TOP_OF_PAGE2'.
+DATA: fieldtab2            TYPE slis_t_fieldcat_alv,
+      heading2             TYPE slis_t_listheader,
+      layout2              TYPE slis_layout_alv,
+      sortinfo2            TYPE slis_t_sortinfo_alv,
+      sp_group2            TYPE slis_t_sp_group_alv,
+      events2              TYPE slis_t_event,
+      repname              LIKE sy-repid,
+      gt_list_top_of_page2 TYPE slis_t_listheader,
+      g_variant2           LIKE disvariant,
+      gx_variant2          LIKE disvariant.
+
+DATA  ti_bkpf      LIKE bkpf OCCURS 0 WITH HEADER LINE.
+DATA  ti_bsak      LIKE bsak OCCURS 0 WITH HEADER LINE.
+DATA  ti_bsad      LIKE bsad OCCURS 0 WITH HEADER LINE.
+DATA  wa_bseg      LIKE bseg.
+DATA  wa_faglflexa LIKE faglflexa.
+
+DATA: BEGIN OF ti_datos OCCURS 0,
+        bukrs   like bkpf-bukrs,
+        belnr   LIKE bkpf-belnr,      "02
+        buzei   LIKE bseg-buzei,      "03
+        gjahr   like bkpf-gjahr,
+        buzei_x LIKE bseg-buzei,
+        hkont   LIKE bseg-hkont,      "04
+        prctr   LIKE bseg-prctr,      "06
+        pswsl   LIKE bseg-pswsl,      "07
+        fityp   LIKE lfa1-fityp,      "08
+        REBZG   LIKE bseg-REBZG,
+        REBZJ   like bseg-rebzj,
+        emisor(15),"09
+        lifnr   LIKE bseg-lifnr,
+
+        lifnr_x LIKE bseg-lifnr,
+        kunnr   LIKE bseg-kunnr,
+        kunnr_x   LIKE bseg-kunnr,
+        budat   LIKE bkpf-budat,      "13
+        budat_x(10),
+        zfbdt   LIKE bseg-zfbdt,      "14
+        bldat   LIKE bkpf-bldat,      "15
+        bldat_x(10),
+        sgtxt   LIKE bseg-sgtxt,      "16
+        debe    LIKE bseg-dmbtr,      "18
+        haber   LIKE bseg-dmbtr,      "19
+        koart   LIKE bseg-koart,
+        koart_x LIKE bseg-koart,
+        blart   LIKE bkpf-blart,
+        xblnr   LIKE bkpf-xblnr,
+        shkzg   LIKE bseg-shkzg,
+        dmbtr   LIKE bseg-dmbtr,
+        waers   like bkpf-waers,
+        STBLG   LIKE bkpf-STBLG,
+        AUGDT   LIKE bsak-AUGDT,
+        AUGBL   LIKE bsak-AUGBL,
+        BKTXT   LIKE bkpf-BKTXT,
+        RDIFF   LIKE bseg-RDIFF,
+        RDIF2   LIKE bseg-RDIF2,
+        AWKEY   LIKE bkpf-AWKEY,
+      END OF ti_datos.
+
+DATA: BEGIN OF ti_libro OCCURS 0,
+        periodo(8),                   "01
+        belnr   LIKE bkpf-belnr,      "02
+*        buzei   LIKE bseg-buzei,      "03
+        buzeic(10),
+        corr3(5),
+        hkont   LIKE bseg-hkont,      "04
+        und_ope(1),                   "05
+        prctr   LIKE bseg-prctr,      "06
+        waers like bkpf-waers,
+        pswsl   LIKE bseg-pswsl,      "07
+        fityp   LIKE lfa1-fityp,      "08
+        emisor(15),      "09
+        tp_doc(2),                    "10
+        serie(4),                     "11
+        comprob(20),                   "12
+        budat   LIKE bkpf-budat,      "13
+        budat_x(10),
+        zfbdt   LIKE bseg-zfbdt,      "14
+        bldat   LIKE bkpf-bldat,      "15
+        bldat_x(10),
+        sgtxt   LIKE bseg-sgtxt,      "16
+        gl_ref(1),                    "17
+        debe    LIKE bseg-dmbtr,      "18
+        haber   LIKE bseg-dmbtr,      "19
+        dt_estr(40),                  "20
+        estado(1),                    "21
+        koart_x LIKE bseg-koart,
+        STBLG   LIKE bkpf-STBLG,
+        blart   LIKE bkpf-blart,
+        BKTXT   LIKE bkpf-BKTXT,
+        RDIFF   LIKE bseg-RDIFF,
+        RDIF2   LIKE bseg-RDIF2,
+        marca(1),
+      END OF ti_libro.
+
+
+DATA: BEGIN OF ti_libro2 OCCURS 0,
+        periodo(8),                   "01
+        belnr   LIKE bkpf-belnr,      "02
+*        buzei   LIKE bseg-buzei,      "03
+        buzeic(10),
+        corr3(5),
+        hkont   LIKE bseg-hkont,      "04
+        und_ope(1),                   "05
+        prctr   LIKE bseg-prctr,      "06
+        waers like bkpf-waers,
+        pswsl   LIKE bseg-pswsl,      "07
+        fityp   LIKE lfa1-fityp,      "08
+        emisor(15),      "09
+        tp_doc(2),                    "10
+        serie(4),                     "11
+        comprob(20),                   "12
+        budat   LIKE bkpf-budat,      "13
+        budat_x(10),
+        zfbdt   LIKE bseg-zfbdt,      "14
+        bldat   LIKE bkpf-bldat,      "15
+        bldat_x(10),
+        sgtxt   LIKE bseg-sgtxt,      "16
+        gl_ref(1),                    "17
+        debe    LIKE bseg-dmbtr,      "18
+        haber   LIKE bseg-dmbtr,      "19
+        dt_estr(40),                  "20
+        estado(1),                    "21
+        koart_x LIKE bseg-koart,
+        STBLG   LIKE bkpf-STBLG,
+        blart   LIKE bkpf-blart,
+        BKTXT   LIKE bkpf-BKTXT,
+        RDIFF   LIKE bseg-RDIFF,
+        RDIF2   LIKE bseg-RDIF2,
+        marca(1),
+      END OF ti_libro2.
+
+
+DATA BEGIN OF tipos OCCURS 0.
+        INCLUDE STRUCTURE zmant_tipo_pe.
+DATA END OF tipos.
+
+DATA: BEGIN OF ti_plan OCCURS 0,
+        periodo(8),
+        hkont   LIKE bseg-hkont,
+        txt50   LIKE skat-txt50,
+        ktopl(4),
+        d_plan(60),
+        c_cta(30),
+        d_cta(30),
+        estado(1),
+      END OF ti_plan.
+TABLES t001.
+DATA: BEGIN OF ti_archivo OCCURS 0,
+        linea(350),
+      END OF ti_archivo.
+
+DATA gv_lineas    TYPE i.
+
+RANGES:   p_budat FOR  bkpf-budat.
+DATA       p_gjahr TYPE bkpf-gjahr.
+
+DATA: VDOCCLS LIKE T003_I-DOCCLS,
+      d10(2),                    "10
+      d11(4),                    "11
+      d12(20).                   "12
+
+
+data : sent type string.
+data : nums type string value '1234567890'.
+data : len type i.
+data : pos type i.
+data : result type string.
+DATA: tip Like bkpf-xblnr.
+
+DATA: gv_koart    LIKE bseg-koart,
+      gv_lifnr    LIKE bseg-lifnr,
+      gv_kunnr    LIKE bseg-kunnr.
+
+
+TYPES: BEGIN OF ti_cab,
+      SAKNR  LIKE SKAT-SAKNR,
+      TXT50  LIKE SKAT-TXT50,
+      HSL_S  LIKE FAGLFLEXA-HSL,       "Monto ML Saldo
+      END OF ti_cab.
+
+DATA: it_cab TYPE TABLE OF ti_cab with header line.
+
+
+*VARIABLES Y TABLAS INTERNAS PARA BAPI BAPI_GL_GETGLACCPERIODBALANCES
+
+DATA: GVD_COMPANYCODE             LIKE BAPI1028_0-COMP_CODE ,
+      GVD_GLACCT                  LIKE    BAPI1028_0-GL_ACCOUNT ,
+      GVD_FISCALYEAR              LIKE    BAPI1028_4-FISC_YEAR  ,
+      GVD_CURRENCYTYPE            LIKE    BAPI1028_5-CURR_TYPE  ,
+      GVD_BALANCE_CARRIED_FORWARD LIKE    BAPI1028_4-BALANCE    ,
+      GTD_RETURN                  TYPE TABLE OF BAPIRETURN WITH HEADER LINE,
+      GTD_ACCOUNT_BALANCES        TYPE TABLE OF BAPI1028_4 WITH HEADER LINE.
+
+
+*********************************************************************
+SELECTION-SCREEN BEGIN OF BLOCK bq1 WITH FRAME TITLE text-001.
+PARAMETERS       p_bukrs TYPE bkpf-bukrs OBLIGATORY.
+PARAMETER   $perio    LIKE s001-spmon OBLIGATORY DEFAULT sy-datum+0(6)
+MODIF ID xyz.
+
+SELECT-OPTIONS   p_blart FOR  bkpf-blart.
+SELECT-OPTIONS   p_belnr FOR  bseg-belnr.
+PARAMETERS:  p_perio LIKE sy-datum OBLIGATORY.
+SELECTION-SCREEN END OF BLOCK bq1.
+
+SELECTION-SCREEN BEGIN OF BLOCK bq2 WITH FRAME TITLE text-005.
+SELECTION-SCREEN: BEGIN OF LINE.
+SELECTION-SCREEN: POSITION 19.
+PARAMETERS id_plan(4) OBLIGATORY DEFAULT '01'.
+SELECTION-SCREEN: COMMENT 1(17) text-002.
+
+SELECTION-SCREEN: POSITION 55.
+PARAMETERS d_plan(60) OBLIGATORY DEFAULT
+'PLAN CONTABLE GENERAL EMPRESARIAL'.
+SELECTION-SCREEN: COMMENT 28(27) text-003.
+SELECTION-SCREEN: END OF LINE.
+SELECTION-SCREEN END OF BLOCK bq2.
+
+SELECTION-SCREEN BEGIN OF BLOCK bq3 WITH FRAME TITLE text-006.
+PARAMETERS:  p_check1 AS CHECKBOX default 'X'.
+SELECTION-SCREEN END OF BLOCK bq3.
+
+SELECTION-SCREEN BEGIN OF BLOCK bq4 WITH FRAME TITLE text-007.
+PARAMETERS:  p_check2 AS CHECKBOX default ''.
+PARAMETERS:  p_check3 AS CHECKBOX default ''.
+SELECTION-SCREEN END OF BLOCK bq4.
+
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR $perio.
+  PERFORM help_periodo CHANGING $perio.
+
+*********************************************************************
+START-OF-SELECTION.
+  p_gjahr = $perio+0(4).
+  REFRESH p_budat.
+  CLEAR p_budat.
+  p_budat-sign = 'I'.
+  p_budat-option = 'BT'.
+  CONCATENATE $perio '01' INTO p_budat-low.
+  CALL FUNCTION 'RP_LAST_DAY_OF_MONTHS'
+    EXPORTING
+      day_in            = p_budat-low
+    IMPORTING
+      last_day_of_month = p_budat-high
+    EXCEPTIONS
+      day_in_no_date    = 1
+      OTHERS            = 2.
+
+  IF sy-subrc <> 0.
+* MESSAGE ID SY-MSGID TYPE SY-MSGTY NUMBER SY-MSGNO
+*         WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+  ENDIF.
+  APPEND p_budat.
+
+  PERFORM armar_blart.
+  PERFORM armar_serv_basicos.
+
+  SELECT SINGLE waers INTO t001-waers FROM t001
+     WHERE bukrs = p_bukrs.
+
+  REFRESH: ti_bkpf, ti_datos, ti_libro.
+  CLEAR:   gv_lineas.
+  REFRESH tipos.
+
+  SELECT * INTO CORRESPONDING FIELDS OF TABLE tipos
+    FROM zmant_tipo_pe.
+
+  SELECT * INTO TABLE ti_bkpf
+    FROM bkpf
+    WHERE bukrs =  p_bukrs
+      AND gjahr =  p_gjahr
+      AND budat IN p_budat AND
+          belnr IN p_belnr AND
+          blart IN p_blart.
+
+  "eliminar los documentos anulados
+  IF P_CHECK2 is initial.
+    DELETE ti_bkpf WHERE STBLG NE space.
+    DELETE ti_bkpf WHERE BLART EQ 'NK'.
+  ENDIF.
+
+  "eliminar los documentos estadísticos
+  IF P_CHECK3 is initial.
+    DELETE ti_bkpf WHERE BSTAT EQ 'S'.
+  ENDIF.
+
+  "eliminar periodo especiales
+  IF p_check1 is initial and p_budat+7(2) EQ '12'.
+    DELETE ti_bkpf WHERE MONAT NE '12'.
+  ENDIF.
+
+
+  DATA: bseg_sgtxt LIKE bseg-sgtxt.
+
+  LOOP AT ti_bkpf.
+    CLEAR bseg_sgtxt.
+    SELECT SINGLE sgtxt INTO bseg_sgtxt FROM *bseg
+          WHERE  bukrs =  p_bukrs
+      AND belnr =  ti_bkpf-belnr
+      AND gjahr =  p_gjahr AND
+          sgtxt NE ''.
+
+*    SELECT * FROM bseg INTO wa_bseg
+*      WHERE bukrs =  p_bukrs
+*        AND belnr =  ti_bkpf-belnr
+*        AND gjahr =  p_gjahr.
+
+    SELECT * FROM faglflexa INTO wa_faglflexa
+      WHERE RBUKRS =  p_bukrs
+        AND DOCNR  =  ti_bkpf-belnr
+        AND RYEAR  =  p_gjahr
+        AND RLDNR  = '0L'.
+
+
+      "corrección de errores en data fecha de documento > fecha de contabilización
+      IF ti_bkpf-bldat > ti_bkpf-budat.
+        ti_bkpf-bldat = ti_bkpf-budat.
+      ENDIF.
+
+
+      MOVE-CORRESPONDING ti_bkpf TO ti_datos.
+      wa_bseg-sgtxt = bseg_sgtxt.
+
+      SELECT SINGLE * FROM BSEG INTO wa_bseg
+                WHERE  bukrs =  wa_faglflexa-RBUKRS  AND
+                       belnr =  wa_faglflexa-DOCNR   AND
+                       gjahr =  wa_faglflexa-RYEAR   AND
+                       BUZEI =  wa_faglflexa-BUZEI.
+
+      MOVE-CORRESPONDING wa_bseg TO ti_datos.
+
+      SELECT SINGLE koart lifnr kunnr buzei
+        INTO (ti_datos-koart_x, ti_datos-lifnr_x,
+        ti_datos-kunnr_x,
+              ti_datos-buzei_x)
+        FROM *bseg
+        WHERE bukrs =  p_bukrs
+          AND belnr =  ti_bkpf-belnr
+          AND gjahr =  p_gjahr
+          AND ( koart = 'D' OR koart = 'K' ).
+      CONCATENATE ti_datos-budat+6(2) '/'
+      ti_datos-budat+4(2) '/' ti_datos-budat+0(4)
+      INTO ti_datos-budat_x.
+      CONCATENATE ti_datos-bldat+6(2) '/'
+      ti_datos-bldat+4(2) '/' ti_datos-bldat+0(4)
+      INTO ti_datos-bldat_x.
+
+      "importes
+      MOVE wa_faglflexa-hsl TO ti_datos-dmbtr.
+
+
+
+      APPEND ti_datos.
+      CLEAR ti_datos.
+    ENDSELECT.
+  ENDLOOP.
+
+*    PERFORM arrastre.
+
+  DESCRIBE TABLE ti_datos LINES gv_lineas.
+  IF gv_lineas IS INITIAL.
+    MESSAGE 'No existen datos con estos parametros' TYPE 'I'.
+  ELSE.
+    PERFORM completa_libro.
+    PERFORM salida.
+  ENDIF.
+
+
+*&---------------------------------------------------------------------*
+*&      Form  COMPLETA_LIBRO
+*&---------------------------------------------------------------------*
+FORM completa_libro.
+  DATA lv_mitkz LIKE skb1-mitkz.
+  DATA lv_largo TYPE i.
+  DATA: sgtxt_2 LIKE bseg-sgtxt.
+
+
+  LOOP AT ti_datos.
+
+
+    CLEAR sgtxt_2.
+    CLEAR ti_libro.
+    CLEAR lv_mitkz.
+    MOVE-CORRESPONDING ti_datos TO ti_libro.
+    CLEAR ti_libro-zfbdt.
+    CONCATENATE $perio '00' INTO ti_libro-periodo.
+
+
+    """"" Col.09 > Num.Emisor // Col.08 > Tipo Emisor
+    CASE ti_datos-koart_x.
+      WHEN 'K'.
+        IF ti_datos-lifnr_x = '0000290299'.
+          SELECT SINGLE stcd1 fityp name1 INTO
+            (ti_libro-emisor, ti_libro-fityp, sgtxt_2)
+            FROM bsec
+            WHERE bukrs = p_bukrs
+              AND belnr = ti_datos-belnr
+              AND gjahr = p_gjahr
+              AND buzei = ti_datos-buzei_x.
+          IF ti_datos-sgtxt IS INITIAL.
+            CONCATENATE ti_libro-emisor ';' sgtxt_2 INTO
+            sgtxt_2.
+          ENDIF.
+        ELSE.
+*          ti_libro-emisor = ti_datos-lifnr_x.
+          SELECT SINGLE fityp stcd1 name1
+            INTO (ti_libro-fityp, ti_libro-emisor, sgtxt_2)
+            FROM lfa1 WHERE lifnr = ti_datos-lifnr_x.
+          IF ti_datos-sgtxt IS INITIAL.
+            CONCATENATE ti_datos-lifnr_x ';' sgtxt_2 INTO
+            sgtxt_2.
+          ENDIF.
+        ENDIF.
+      WHEN 'D'.
+*        ti_libro-emisor = ti_datos-kunnr_X.
+        SELECT SINGLE fityp stcd1 name1
+            INTO (ti_libro-fityp, ti_libro-emisor, sgtxt_2)
+        FROM kna1 WHERE kunnr = ti_datos-kunnr_x.
+        IF ti_datos-sgtxt IS INITIAL.
+          CONCATENATE ti_datos-kunnr_x ';' sgtxt_2 INTO
+          sgtxt_2.
+        ENDIF.
+      WHEN ''.
+        IF ti_datos-blart = 'WE'.
+          SELECT SINGLE fityp stcd1 name1
+            INTO (ti_libro-fityp, ti_libro-emisor, sgtxt_2)
+            FROM lfa1 WHERE lifnr = ti_datos-lifnr.
+          IF ti_datos-sgtxt IS INITIAL.
+            CONCATENATE ti_datos-lifnr ';' sgtxt_2 INTO
+            sgtxt_2.
+          ENDIF.
+
+        ENDIF.
+      WHEN OTHERS.
+        ti_libro-fityp = ''.
+        ti_datos-emisor = ''.
+    ENDCASE.
+    translate ti_libro-emisor using '- ' .
+    CONDENSE ti_libro-emisor NO-GAPS.
+*
+*    CALL FUNCTION 'CONVERSION_EXIT_ALPHA_INPUT'
+*      EXPORTING
+*        input  = ti_libro-emisor
+*      IMPORTING
+*        output = ti_libro-emisor.
+
+    """" Col.10 > Tipo comprobante
+    if ( ti_datos-lifnr_x = 'ETAC' or
+         ti_datos-lifnr_x = 'MCCO' ) and ti_datos-koart_x = 'D'.
+      ti_libro-emisor = '0'.
+    else.
+*          CALL FUNCTION 'CONVERSION_EXIT_ALPHA_INPUT'
+*      EXPORTING
+*        input  = ti_libro-emisor
+*      IMPORTING
+*        output = ti_libro-emisor.
+
+    endif.
+
+    PERFORM t003I USING ti_datos-blart CHANGING ti_libro-tp_doc.
+
+    """"" Col.11 > Serie // Col.12 > No.Comprobante
+    PERFORM referencia USING ti_datos-blart
+                             ti_datos-xblnr
+                       CHANGING tip
+                                ti_libro-serie
+                                ti_libro-comprob.
+
+    "Si el documento ha sido anulado, colocar 00 en columna SERIE (10)
+    IF ti_libro-STBLG NE ''.
+      clear: ti_libro-serie, ti_libro-comprob.
+      ti_libro-serie = '00'.
+    ENDIF.
+
+
+
+"06-07-18 Cambio solicitado excel al 19.06
+    IF ti_datos-sgtxt IS INITIAL.
+
+      select single sgtxt into ti_libro-sgtxt
+      from bseg where bukrs eq ti_datos-bukrs   and
+                      belnr eq ti_datos-belnr   and
+                      gjahr eq ti_datos-gjahr   and
+                      sgtxt NE ''.
+
+    ENDIF.
+
+
+    "Caso DW Pago detracciones
+    DATA: long    TYPE i.
+    DATA: pos_ini TYPE i.
+    DATA: zhkont  LIKE bseg-hkont.
+    DATA: zkoart  LIKE bseg-koart.
+
+
+
+    """"" Col.18 > Debe // Col.19 > Haber
+    IF ti_datos-dmbtr < 0. "Debe
+      ti_libro-haber = abs( ti_datos-dmbtr ).
+    ELSE.
+      ti_libro-debe  = ti_datos-dmbtr.
+    ENDIF.
+    WRITE ti_datos-belnr TO docum.
+
+
+*calculo el largo."debe ser 9 o 10.
+    DATA: largo TYPE i.
+    largo = STRLEN( docum ).
+    IF largo = 9.
+      CONCATENATE 'M' docum+0(2) docum+5(4) ti_datos-buzei
+       INTO ti_libro-buzeic.
+      """"" Col.20 > Estado estructural
+    ELSEIF largo = 10.
+      CONCATENATE 'M' docum+0(2) docum+6(4) ti_datos-buzei
+      INTO ti_libro-buzeic.
+      """"" Col.20 > Estado estructural
+    ENDIF.
+
+
+    "COLUMNA 20 - DATO ESTRUCTURAL
+
+    data: numdoc1(10).
+    clear: numdoc1.
+
+    CALL FUNCTION 'CONVERSION_EXIT_ALPHA_OUTPUT'
+      EXPORTING
+        INPUT  = ti_libro-BELNR
+      IMPORTING
+        OUTPUT = numdoc1.
+
+    "LIBRO DE COMPRAS FORMATO 8.1
+    IF ti_datos-blart IN blart_080100.
+      CONCATENATE '080100'  '&'
+           ti_libro-periodo '&'
+           numdoc1          '&'
+           ti_libro-buzeic
+      INTO ti_libro-dt_estr.
+    ENDIF.
+
+    "LIBRO DE COMPRAS FORMATO 8.2
+    IF ti_datos-blart IN blart_080200.
+      CONCATENATE '080200' '&'
+           ti_libro-periodo '&'
+           numdoc1          '&'
+           ti_libro-buzeic
+      INTO ti_libro-dt_estr.
+    ENDIF.
+
+    "LIBRO DE VENTAS
+    IF ti_datos-blart IN blart_140100.
+      CONCATENATE '140100' '&'
+           ti_libro-periodo '&'
+           numdoc1          '&'
+           ti_libro-buzeic
+      INTO ti_libro-dt_estr.
+    ENDIF.
+
+    IF ti_libro-tp_doc = '02'.
+      clear: ti_libro-dt_estr.
+    ENDIF.
+
+
+    """"" Col.21 > Estado
+    ti_libro-estado = '1'.
+    if ti_libro-hkont+0(1) ne '6' and
+       ti_libro-hkont+0(1) ne '7'.
+      clear ti_libro-prctr.
+    endif.
+    ti_libro-waers = ti_datos-waers.
+
+
+
+********************************************************
+    "DOCUMENTO KV BOL DE HONO ELECT.
+
+    IF ti_datos-blart = 'KV'.
+      clear: ti_libro-DT_ESTR.
+    ENDIF.
+
+
+*******************************************************
+    "Caso WE Entrada de mercancías - Tipo de Comprobante 09 Guía de Remisión
+    data: prov  LIKE LFA1-LIFNR.
+
+
+    IF ti_datos-blart  = 'WE' and ti_datos-XBLNR+0(2) = 'GR'.
+
+      select single lifnr INTO prov
+      from MSEG where MBLNR = ti_datos-AWKEY+0(10)    and
+                      MJAHR = ti_datos-AWKEY+10(4).
+
+      select single STCD1 INTO ti_libro-EMISOR
+      from LFA1 where lifnr = prov.
+
+      ti_libro-FITYP      = '6'.                  "8 Tipo Emisor
+*  ti_libro-EMISOR     = ''.                   "9 Emisor
+      ti_libro-TP_DOC     = '09'.                 "10 Tipo Comprobante
+      ti_libro-SERIE      = ti_datos-XBLNR+3(3).            "11 Serie
+      ti_libro-COMPROB    = ti_datos-XBLNR+8(8).  "12 Número de comprobante
+
+    ENDIF.
+
+
+    "Caso WE Entrada de mercancías - Tipo de Comprobante 09 Guía de Remisión
+    data: ref_ent LIKE LIKP-xblnr.
+
+    IF ti_datos-blart  = 'WL' and ti_datos-XBLNR is not initial.
+
+      select single XBLNR INTO ref_ent
+      from LIKP where VBELN = ti_datos-XBLNR.
+
+      ti_libro-FITYP      = '6'.                  "8 Tipo Emisor
+      ti_libro-EMISOR     = '20492134091'.                  "9 Emisor
+      ti_libro-TP_DOC     = '09'.                 "10 Tipo Comprobante
+      ti_libro-SERIE      = ref_ent+4(4).                   "11 Serie
+      ti_libro-COMPROB    = ref_ent+9(7).        "12 Número de comprobante
+
+    ENDIF.
+
+
+*******************************************************
+    "Caso DF - Tipo de Comprobantes 03 Boleta de Venta
+    IF ti_datos-blart  = 'DF' and ti_datos-XBLNR+0(2) = '03'.
+
+*  ti_libro-FITYP      = '6'.                  "8 Tipo Emisor
+*  ti_libro-EMISOR     = ''.                   "9 Emisor
+      ti_libro-TP_DOC     = ti_datos-XBLNR+0(2).  "10 Tipo Comprobante
+      ti_libro-SERIE      = ti_datos-XBLNR+4(4).            "11 Serie
+      ti_libro-COMPROB    = ti_datos-XBLNR+9(7).  "12 Número de comprobante
+
+    ENDIF.
+
+*******************************************************
+    "Caso PA - Tipo de Comprobante 06 Porte Aéreo
+    IF ti_datos-blart  = 'PA'..
+
+*  ti_libro-FITYP      = '6'.                  "8 Tipo Emisor
+*  ti_libro-EMISOR     = ''.                   "9 Emisor
+      ti_libro-TP_DOC     = '06'.                 "10 Tipo Comprobante
+      ti_libro-SERIE      = ti_datos-XBLNR+0(4).            "11 Serie
+      ti_libro-COMPROB    = ti_datos-XBLNR+5(8).  "12 Número de comprobante
+
+    ENDIF.
+
+
+
+*******************************************************
+"06-07-19 Excel Revisión al 19.06
+    "Tipo de Comprobante 20 Comprobante de Retención
+    IF ti_datos-hkont  = '4011400001'.
+
+      clear: gv_koart, gv_lifnr, gv_kunnr.
+      select single koart lifnr kunnr into (gv_koart, gv_lifnr, gv_kunnr)
+      from bseg where bukrs eq ti_datos-bukrs   and
+                      belnr eq ti_datos-belnr   and
+                      gjahr eq ti_datos-gjahr   and
+                      koart IN ('D', 'K').
+
+      if sy-subrc = 0.
+          if gv_koart = 'D'.
+             select single STCDT STCD1 into (ti_libro-FITYP, ti_libro-EMISOR)
+               from kna1 where kunnr EQ gv_kunnr.
+          elseif gv_koart = 'K'.
+             select single STCDT STCD1 into (ti_libro-FITYP, ti_libro-EMISOR)
+               from lfa1 where lifnr EQ gv_lifnr.
+          endif.
+      endif.
+
+*  ti_libro-FITYP      = '6'.                  "8 Tipo Emisor
+*  ti_libro-EMISOR     = ''.                   "9 Emisor
+      ti_libro-TP_DOC     = '20'.                 "10 Tipo Comprobante
+      ti_libro-SERIE      = ti_datos-XBLNR+3(4).  "11 Serie                      (desde la 4 a la 7)  06-07-19 Excel Revisión al 19.06
+      ti_libro-COMPROB    = ti_datos-XBLNR+8(8).  "12 Número de comprobante      (desde la 9 a la 18) 06-07-19 Excel Revisión al 19.06
+
+    ENDIF.
+
+*******************************************************
+    "Tipo de Comprobante 40 Comprobante de Percepción
+    "06-07-19 Excel Revisión al 19.06
+    IF ti_datos-hkont  = '4011300001'.
+
+      clear: gv_koart, gv_lifnr, gv_kunnr.
+      select single koart lifnr kunnr into (gv_koart, gv_lifnr, gv_kunnr)
+      from bseg where bukrs eq ti_datos-bukrs   and
+                      belnr eq ti_datos-belnr   and
+                      gjahr eq ti_datos-gjahr   and
+                      koart IN ('D', 'K').
+
+      if sy-subrc = 0.
+          if gv_koart = 'D'.
+             select single STCDT STCD1 into (ti_libro-FITYP, ti_libro-EMISOR)
+               from kna1 where kunnr EQ gv_kunnr.
+          elseif gv_koart = 'K'.
+             select single STCDT STCD1 into (ti_libro-FITYP, ti_libro-EMISOR)
+               from lfa1 where lifnr EQ gv_lifnr.
+          endif.
+      endif.
+
+*  ti_libro-FITYP      = '6'.                  "8 Tipo Emisor
+*  ti_libro-EMISOR     = ''.                   "9 Emisor
+      ti_libro-TP_DOC     = '40'.                 "10 Tipo Comprobante
+      ti_libro-SERIE      = ti_datos-XBLNR+3(4).  "11 Serie                      (desde la 4 a la 7)  06-07-19 Excel Revisión al 19.06
+      ti_libro-COMPROB    = ti_datos-XBLNR+8(8).  "12 Número de comprobante      (desde la 9 a la 18) 06-07-19 Excel Revisión al 19.06
+
+    ENDIF.
+
+*******************************************************
+    "Valor columna 10 en blanco, 11 debe estar en blanco y 12 debe tener 00
+    "06-07-19 Excel Revisión al 19.06
+
+    IF ti_libro-TP_DOC is initial.
+       clear ti_libro-SERIE.
+       ti_libro-COMPROB = '00'.
+    ENDIF.
+
+
+
+
+*******************************************************
+    "AGREGA LINEA A TABLA FINAL
+    APPEND ti_libro.
+*******************************************************
+  ENDLOOP.  "TI_DATOS
+
+
+******************************************************************
+  "eliminar posición con monto 0.
+  DELETE ti_libro WHERE debe = 0  and haber = 0.
+  DELETE ti_libro WHERE marca = 'X'.
+
+  DATA: numdoc like bkpf-belnr,
+        c3     Like bseg-buzei,
+        ind    like sy-tabix,
+        L(1).
+
+******************************************************************
+  "correlativo columna 3
+
+
+  refresh ti_libro2.
+  LOOP AT ti_libro into ti_libro2.
+    numdoc = ti_libro2-belnr.
+
+    L = 'M'.
+
+    SEARCH ti_libro2-BKTXT FOR 'Apertura ejercicio'.
+    IF SY-SUBRC EQ 0.
+      L = 'A'.
+      ti_libro2-sgtxt = 'Apertura del periodo'.
+      clear: ti_libro2-FITYP, ti_libro2-EMISOR.
+
+*      IF ti_libro2-hkont = '9900000001'.
+*        DELETE ti_libro.
+*      ENDIF.
+
+    ENDIF.
+
+    SEARCH ti_libro2-BKTXT FOR 'Contab.fin ejerc.pérdidas'.
+    IF SY-SUBRC EQ 0.
+      L = 'C'.
+      ti_libro2-sgtxt = 'cierre del periodo'.
+      clear: ti_libro2-FITYP, ti_libro2-EMISOR.
+*      IF ti_libro2-hkont = '9900000001'.
+*        DELETE ti_libro.
+*      ENDIF.
+    ELSE.
+      SEARCH ti_libro2-BKTXT FOR 'Cierre de ejercicio'.
+      IF SY-SUBRC EQ 0.
+        L = 'C'.
+        ti_libro2-sgtxt = 'cierre del periodo'.
+        clear: ti_libro2-FITYP, ti_libro2-EMISOR.
+*      IF ti_libro2-hkont = '9900000001'.
+*        DELETE ti_libro.
+*      ENDIF.
+      ENDIF.
+    ENDIF.
+
+    IF SY-TABIX = 1.
+      c3 = 1.
+*     concatenate ti_libro2-buzeic+0(7) c3 into ti_libro2-buzeic.
+      concatenate  L '0' c3 into ti_libro2-corr3.
+    ELSE.
+      ind = sy-tabix - 1.
+      read table ti_libro index ind.
+
+      IF ti_libro-belnr EQ numdoc.
+        c3 = c3 + 1.
+*           concatenate ti_libro2-buzeic+0(7) c3 into ti_libro2-buzeic.
+        concatenate L '0' c3 into ti_libro2-corr3.
+      ELSE.
+        c3 = 1.
+*           concatenate ti_libro2-buzeic+0(7) c3 into ti_libro2-buzeic.
+        concatenate L '0' c3 into ti_libro2-corr3.
+      ENDIF.
+
+    ENDIF.
+
+    modify ti_libro from ti_libro2.
+
+  ENDLOOP.  "ti_libro
+
+
+
+
+
+
+
+  SORT ti_libro BY periodo belnr buzeic.
+ENDFORM.                    " COMPLETA_LIBRO
+
+
+*&---------------------------------------------------------------------*
+*&      Form  SALIDA
+*&---------------------------------------------------------------------*
+FORM salida.
+  PERFORM initialize_fieldcat2 USING fieldtab2[].
+  PERFORM build_eventtab2   USING events2[].
+* PERFORM ordenamiento      USING sortinfo2[].
+  PERFORM build_comment2    USING heading2[].
+  PERFORM build_layout      USING layout2.
+  PERFORM write_output2.
+ENDFORM.                    " SALIDA
+
+
+*&---------------------------------------------------------------------*
+*&      Form  INITIALIZE_FIELDCAT2
+*&---------------------------------------------------------------------*
+FORM initialize_fieldcat2 USING p_fieldtab TYPE slis_t_fieldcat_alv.
+  DATA  l_fieldcat TYPE slis_fieldcat_alv.
+  REFRESH p_fieldtab.
+  repname = sy-repid.
+
+*1 Periodo
+  CLEAR l_fieldcat.
+  l_fieldcat-fieldname   = 'PERIODO'.
+  l_fieldcat-tabname     = 'TI_LIBRO'.
+  l_fieldcat-seltext_m   = '1.Periodo'.
+  l_fieldcat-seltext_l   = '1.Periodo'.
+  l_fieldcat-outputlen   = '8'.
+  APPEND l_fieldcat TO p_fieldtab.
+
+*2 CUO
+  CLEAR l_fieldcat.
+  l_fieldcat-fieldname   = 'BELNR'.
+  l_fieldcat-tabname     = 'TI_LIBRO'.
+  l_fieldcat-seltext_m   = '2.CUO'.
+  l_fieldcat-seltext_l   = '2.Codigo Unico Operacion'.
+  l_fieldcat-outputlen   = '10'.
+  l_fieldcat-no_zero    = 'X'.
+  APPEND l_fieldcat TO p_fieldtab.
+
+*3 CUO Correlativo
+  CLEAR l_fieldcat.
+  l_fieldcat-fieldname   = 'CORR3'.
+  l_fieldcat-tabname     = 'TI_LIBRO'.
+  l_fieldcat-seltext_m   = '3.Correl.'.
+  l_fieldcat-seltext_l   = '3.CUO Correlativo'.
+  l_fieldcat-outputlen   = '3'.
+  APPEND l_fieldcat TO p_fieldtab.
+
+*4 Cuenta Contable
+  CLEAR l_fieldcat.
+  l_fieldcat-fieldname   = 'HKONT'.
+  l_fieldcat-tabname     = 'TI_LIBRO'.
+  l_fieldcat-seltext_m   = '4.Cta.Contable'.
+  l_fieldcat-seltext_l   = '4.Cuenta Contable'.
+  l_fieldcat-outputlen   = '10'.
+  APPEND l_fieldcat TO p_fieldtab.
+
+*5 Unidad Operación
+  CLEAR l_fieldcat.
+  l_fieldcat-fieldname   = 'UND_OPE'.
+  l_fieldcat-tabname     = 'TI_LIBRO'.
+  l_fieldcat-seltext_m   = '5.Und.Oper'.
+  l_fieldcat-seltext_l   = '5.Unidad Operación'.
+  l_fieldcat-outputlen   = '3'.
+  APPEND l_fieldcat TO p_fieldtab.
+
+*6 Tipo de moneda
+  CLEAR l_fieldcat.
+  l_fieldcat-fieldname   = 'WAERS'.
+  l_fieldcat-tabname     = 'TI_LIBRO'.
+  l_fieldcat-seltext_m   = '6.Tp.Mon.'.
+  l_fieldcat-seltext_l   = '6.Tp.Mon.'.
+  l_fieldcat-outputlen   = '5'.
+  APPEND l_fieldcat TO p_fieldtab.
+
+*7 Centro de Costo
+  CLEAR l_fieldcat.
+  l_fieldcat-fieldname   = 'PRCTR'.
+  l_fieldcat-tabname     = 'TI_LIBRO'.
+  l_fieldcat-seltext_m   = '7.CeCo'.
+  l_fieldcat-seltext_l   = '7.Centro Costo'.
+  l_fieldcat-outputlen   = '10'.
+  l_fieldcat-no_zero    = 'X'.
+  APPEND l_fieldcat TO p_fieldtab.
+
+*8 Tipo Emisor
+  CLEAR l_fieldcat.
+  l_fieldcat-fieldname   = 'FITYP'.
+  l_fieldcat-tabname     = 'TI_LIBRO'.
+  l_fieldcat-seltext_m   = '8.Tp.Emis'.
+  l_fieldcat-seltext_l   = '8.Tipo Emisor'.
+  l_fieldcat-outputlen   = '3'.
+  APPEND l_fieldcat TO p_fieldtab.
+
+*9 Emisor
+  CLEAR l_fieldcat.
+  l_fieldcat-fieldname   = 'EMISOR'.
+  l_fieldcat-tabname     = 'TI_LIBRO'.
+  l_fieldcat-seltext_m   = '9.Emis.'.
+  l_fieldcat-seltext_l   = '9.Emisor'.
+  l_fieldcat-outputlen   = '10'.
+  l_fieldcat-no_zero    = 'X'.
+  APPEND l_fieldcat TO p_fieldtab.
+
+*10 Tipo Comprobante
+  CLEAR l_fieldcat.
+  l_fieldcat-fieldname   = 'TP_DOC'.
+  l_fieldcat-tabname     = 'TI_LIBRO'.
+  l_fieldcat-seltext_m   = '10.Tp.Cmp.'.
+  l_fieldcat-seltext_l   = '10.Tipo Comprobante'.
+  l_fieldcat-outputlen   = '20'.
+*  l_fieldcat-no_zero    = 'X'.
+  APPEND l_fieldcat TO p_fieldtab.
+
+*11 Serie
+  CLEAR l_fieldcat.
+  l_fieldcat-fieldname   = 'SERIE'.
+  l_fieldcat-tabname     = 'TI_LIBRO'.
+  l_fieldcat-seltext_m   = '11.Serie'.
+  l_fieldcat-seltext_l   = '11.Serie Comprobante'.
+  l_fieldcat-outputlen   = '4'.
+  APPEND l_fieldcat TO p_fieldtab.
+
+*12 Número de comprobante
+  CLEAR l_fieldcat.
+  l_fieldcat-fieldname   = 'COMPROB'.
+  l_fieldcat-tabname     = 'TI_LIBRO'.
+  l_fieldcat-seltext_m   = '12.No.Cmp.'.
+  l_fieldcat-seltext_l   = '12.No.comprobante'.
+  l_fieldcat-outputlen   = '8'.
+  APPEND l_fieldcat TO p_fieldtab.
+
+*13 Fecha de contabilización
+  CLEAR l_fieldcat.
+  l_fieldcat-fieldname   = 'BUDAT_X'.
+  l_fieldcat-tabname     = 'TI_LIBRO'.
+  l_fieldcat-seltext_m   = '13.Fe.Cnt.'.
+  l_fieldcat-seltext_l   = '13.Fe.Contable'.
+  l_fieldcat-outputlen   = '10'.
+  APPEND l_fieldcat TO p_fieldtab.
+
+*14 Fecha de Vencimiento
+  CLEAR l_fieldcat.
+  l_fieldcat-fieldname   = 'ZFBDT'.
+  l_fieldcat-tabname     = 'TI_LIBRO'.
+  l_fieldcat-seltext_m   = '14.Fe.Ven'.
+  l_fieldcat-seltext_l   = '14.Fe.Vencimiento'.
+  l_fieldcat-outputlen   = '10'.
+  APPEND l_fieldcat TO p_fieldtab.
+
+*15 Fecha de emisión
+  CLEAR l_fieldcat.
+  l_fieldcat-fieldname   = 'BLDAT_X'.
+  l_fieldcat-tabname     = 'TI_LIBRO'.
+  l_fieldcat-seltext_m   = '15.Fe.Em.'.
+  l_fieldcat-seltext_l   = '15.Fe.Emisión'.
+  l_fieldcat-outputlen   = '10'.
+  APPEND l_fieldcat TO p_fieldtab.
+
+*16 Glosa
+  CLEAR l_fieldcat.
+  l_fieldcat-fieldname   = 'SGTXT'.
+  l_fieldcat-tabname     = 'TI_LIBRO'.
+  l_fieldcat-seltext_m   = '16.Glos'.
+  l_fieldcat-seltext_l   = '16.Glosa'.
+  l_fieldcat-outputlen   = '50'.
+  APPEND l_fieldcat TO p_fieldtab.
+
+*17 Glosa referencial
+  CLEAR l_fieldcat.
+  l_fieldcat-fieldname   = 'GL_REF'.
+  l_fieldcat-tabname     = 'TI_LIBRO'.
+  l_fieldcat-seltext_m   = '17.Gl.Ref.'.
+  l_fieldcat-seltext_l   = '17.Glosa Referencia'.
+  l_fieldcat-outputlen   = '1'.
+  APPEND l_fieldcat TO p_fieldtab.
+
+*18 Debe
+  CLEAR l_fieldcat.
+  l_fieldcat-fieldname   = 'DEBE'.
+  l_fieldcat-tabname     = 'TI_LIBRO'.
+  l_fieldcat-seltext_m   = '18.Debe'.
+  l_fieldcat-seltext_l   = '18.Debe'.
+  l_fieldcat-outputlen   = '17'.
+  l_fieldcat-do_sum      = 'X'.
+  l_fieldcat-currency = t001-waers.
+  APPEND l_fieldcat TO p_fieldtab.
+
+*19 Haber
+  CLEAR l_fieldcat.
+  l_fieldcat-fieldname   = 'HABER'.
+  l_fieldcat-tabname     = 'TI_LIBRO'.
+  l_fieldcat-seltext_m   = '19.Haber'.
+  l_fieldcat-seltext_l   = '19.Haber'.
+  l_fieldcat-outputlen   = '17'.
+  l_fieldcat-do_sum      = 'X'.
+  l_fieldcat-currency = t001-waers.
+  APPEND l_fieldcat TO p_fieldtab.
+
+*20 Dato Estructural
+  CLEAR l_fieldcat.
+  l_fieldcat-fieldname   = 'DT_ESTR'.
+  l_fieldcat-tabname     = 'TI_LIBRO'.
+  l_fieldcat-seltext_m   = '20.Dt.Estr.'.
+  l_fieldcat-seltext_l   = '20.Dato Estructural'.
+  l_fieldcat-outputlen   = '40'.
+  APPEND l_fieldcat TO p_fieldtab.
+
+*21 Estado
+  CLEAR l_fieldcat.
+  l_fieldcat-fieldname   = 'ESTADO'.
+  l_fieldcat-tabname     = 'TI_LIBRO'.
+  l_fieldcat-seltext_m   = '21.Est.'.
+  l_fieldcat-seltext_l   = '21.Estado'.
+  l_fieldcat-outputlen   = '1'.
+  APPEND l_fieldcat TO p_fieldtab.
+
+  "OTROS CAMPOS NO VISIBLES
+
+* Clase de documento
+  CLEAR l_fieldcat.
+  l_fieldcat-fieldname   = 'BLART'.
+  l_fieldcat-tabname     = 'TI_LIBRO'.
+  l_fieldcat-seltext_m   = 'Cldoc'.
+  l_fieldcat-seltext_l   = 'Clase Doc.'.
+  l_fieldcat-outputlen   = '2'.
+  l_fieldcat-no_out      = 'X'.
+  APPEND l_fieldcat TO p_fieldtab.
+
+
+
+ENDFORM.                    " INITIALIZE_FIELDCAT2
+
+
+*&---------------------------------------------------------------------*
+*&      Form  build_eventtab2
+*&---------------------------------------------------------------------*
+FORM build_eventtab2 USING p_events TYPE slis_t_event.
+  DATA: ls_event TYPE slis_alv_event.
+  CALL FUNCTION 'REUSE_ALV_EVENTS_GET'
+    EXPORTING
+      i_list_type = 0
+    IMPORTING
+      et_events   = p_events.
+  READ TABLE p_events WITH KEY name = slis_ev_top_of_page
+                          INTO ls_event.
+  IF sy-subrc = 0.
+    MOVE formname_top_of_page2 TO ls_event-form.
+    APPEND ls_event TO p_events.
+  ENDIF.
+ENDFORM.                    "build_eventtab2
+
+
+*&---------------------------------------------------------------------*
+*&      Form  BUILD_COMMENT
+*&---------------------------------------------------------------------*
+FORM build_comment2 USING p_heading TYPE slis_t_listheader.
+  DATA: hline TYPE slis_listheader.
+  DATA: fecha(10).
+
+  CLEAR: hline.
+  REFRESH p_heading.
+  hline-typ  = 'H'.
+  hline-info = 'Libro diario Perú'.
+  APPEND hline TO p_heading.
+
+  hline-typ  = 'S'.
+  hline-key  = 'Sociedad:'.
+  hline-info = p_bukrs.
+  APPEND hline TO p_heading.
+
+  WRITE p_budat TO fecha.
+  hline-typ  = 'S'.
+  hline-key  = 'Periodo:'.
+  WRITE $perio TO hline-info. .
+  APPEND hline TO p_heading.
+ENDFORM.                    " BUILD_COMMENT
+
+
+*&---------------------------------------------------------------------*
+*&      Form  BUILD_LAYOUT
+*&---------------------------------------------------------------------*
+FORM build_layout USING p_layout TYPE slis_layout_alv.
+* p_layout-f2code            = f2code.
+  p_layout-zebra             = 'X'.
+  p_layout-colwidth_optimize = 'X'.
+ENDFORM.                    " BUILD_LAYOUT
+
+
+*&---------------------------------------------------------------------*
+*&      Form  write_output2
+*&---------------------------------------------------------------------*
+FORM write_output2 .
+  DATA: agrupa_alv TYPE slis_sortinfo_alv OCCURS 5 WITH HEADER LINE.
+
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      i_interface_check        = 'X'
+      i_callback_program       = repname
+      i_callback_pf_status_set = 'STATUS_0100'
+      i_callback_user_command  = 'USER_COMMAND2'
+      i_callback_top_of_page   = 'TOP_OF_PAGE2'
+      i_structure_name         = 'TI_LIBRO'
+      is_layout                = layout2
+      i_save                   = 'A'
+      it_fieldcat              = fieldtab2[]
+*     it_special_groups        = sp_group2[]
+*     is_variant               = i_varian
+*     it_sort                  = sortinfo2
+      it_events                = events2[]
+    TABLES
+      t_outtab                 = ti_libro
+    EXCEPTIONS
+      program_error            = 1.
+
+  IF sy-subrc <> 0.
+    WRITE: 'SY-SUBRC: ', sy-subrc, 'REUSE_ALV_GRID_DISPLAY'.
+  ENDIF.
+ENDFORM.                    " WRITE_OUTPUT
+
+
+*&---------------------------------------------------------------------*
+*&      Form  top_of_page2
+*&---------------------------------------------------------------------*
+FORM top_of_page2.
+  CALL FUNCTION 'REUSE_ALV_COMMENTARY_WRITE'
+    EXPORTING
+      it_list_commentary = heading2.
+ENDFORM.                    "top_of_page
+
+
+*&---------------------------------------------------------------------*
+*&      Form  status_0100
+*&---------------------------------------------------------------------*
+FORM status_0100 USING rt_extab TYPE slis_t_extab.
+  SET PF-STATUS '100'.
+ENDFORM.                    "status_0100
+
+
+*&---------------------------------------------------------------------*
+*&      Form  user_command2
+*&---------------------------------------------------------------------*
+FORM user_command2 USING p_ucomm LIKE sy-ucomm
+                      s_selfield TYPE slis_selfield.
+  DATA: ref_grid TYPE REF TO cl_gui_alv_grid.
+  IF ref_grid IS INITIAL.
+    CALL FUNCTION 'GET_GLOBALS_FROM_SLVC_FULLSCR'
+      IMPORTING
+        e_grid = ref_grid.
+
+  ENDIF.
+  IF NOT ref_grid IS INITIAL.
+    CALL METHOD ref_grid->check_changed_data.
+  ENDIF.
+
+  READ TABLE ti_libro INDEX s_selfield-tabindex.
+  s_selfield-refresh = 'X'.
+  s_selfield-col_stable = 'X'.
+  s_selfield-row_stable = 'X'.
+  CASE p_ucomm.
+    WHEN '&IC1'.
+      READ TABLE ti_libro INDEX s_selfield-tabindex.
+      IF sy-subrc = 0.
+        IF s_selfield-fieldname EQ 'BELNR'.
+          SET PARAMETER ID 'BLN' FIELD ti_libro-belnr.
+          SET PARAMETER ID 'BUK' FIELD p_bukrs.
+          SET PARAMETER ID 'GJR' FIELD ti_libro-budat+0(4).
+          CALL TRANSACTION 'FB03' AND SKIP FIRST SCREEN.
+        ENDIF.
+      ENDIF.
+    WHEN '&TXT'.
+      PERFORM archivo.
+    WHEN '&PLAN'.
+      PERFORM plan_ctas.
+  ENDCASE.
+ENDFORM.                    "user_command2
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  ARCHIVO
+*&---------------------------------------------------------------------*
+FORM archivo.
+  DATA lv_linea(350).
+  DATA lv_debe(20).
+  DATA lv_haber(20).
+  DATA lv_budat(10).
+  DATA lv_zfbdt(10).
+  DATA lv_bldat(10).
+  DATA lv_archi_fl TYPE rlgrap-filename.
+  DATA lv_archi_dw TYPE string.
+
+  REFRESH ti_archivo.
+
+  LOOP AT ti_libro.
+    CLEAR: lv_linea, lv_budat, lv_zfbdt,
+           lv_bldat, lv_debe, lv_haber.
+
+    WRITE  ti_libro-budat TO lv_budat.
+    WRITE  ti_libro-zfbdt TO lv_zfbdt.
+    WRITE  ti_libro-bldat TO lv_bldat.
+    TRANSLATE lv_budat USING './'.
+    TRANSLATE lv_zfbdt USING './'.
+    TRANSLATE lv_bldat USING './'.
+
+*    write  ti_libro-debe  TO lv_debe  CURRENCY ti_libro-PSWSL.
+*    write  ti_libro-haber TO lv_haber CURRENCY ti_libro-PSWSL.
+    MOVE  ti_libro-debe  TO lv_debe.
+    MOVE  ti_libro-haber TO lv_haber.
+    IF t001-waers = 'CLP'.
+      TRANSLATE lv_debe USING '. '.
+      TRANSLATE lv_haber USING '. '.
+    ENDIF.
+    CONDENSE lv_debe  NO-GAPS.
+    CONDENSE lv_haber NO-GAPS.
+
+
+    "COLUMNA 2 - NUMERO DE DOCUMENTO
+    Data: cant    type i.
+    data: numdoc(10).
+    clear: numdoc.
+
+*cant = strlen( ti_libro-BELNR ).
+*IF cant = 9.
+
+    CALL FUNCTION 'CONVERSION_EXIT_ALPHA_OUTPUT'
+      EXPORTING
+        INPUT  = ti_libro-BELNR
+      IMPORTING
+        OUTPUT = numdoc.
+
+*ENDIF.
+
+
+    "COLUMNA 6 - CENTRO DE COSTO
+    data: ceco(10).
+    clear: ceco.
+
+    CALL FUNCTION 'CONVERSION_EXIT_ALPHA_OUTPUT'
+      EXPORTING
+        INPUT  = ti_libro-prctr
+      IMPORTING
+        OUTPUT = ceco.
+
+
+    "COLUMNA 8 - TIPO
+
+    IF ti_libro-emisor is initial.
+      ti_libro-emisor = '0'.
+    ENDIF.
+
+    "COLUMNA 9 - NUMERO DE DOC DE IDENTIDAD DEL EMISOR
+    DATA: nif_p1(15),
+          nif_p2(15),
+          nif(15).
+
+    IF ti_libro-koart_x = 'K'.
+      MOVE ti_libro-emisor TO nif.
+    ENDIF.
+
+    IF ti_libro-koart_x = 'D'.
+      MOVE ti_libro-emisor TO nif.
+    ENDIF.
+
+    IF ti_libro-emisor is not initial.
+      MOVE ti_libro-emisor TO nif.
+    ENDIF.
+
+
+
+    "COLUMNA 10 TIPO DOCUMENTO SUNAT
+    IF ti_libro-TP_DOC is initial.
+      ti_libro-TP_DOC = '00'.
+    ENDIF.
+
+                                                            "COLUMNA 11
+    IF ti_libro-TP_DOC = '00'.
+      clear ti_libro-SERIE.
+    ENDIF.
+
+                                                            "COLUMNA 12
+    IF ti_libro-TP_DOC = '00'.
+      ti_libro-COMPROB = '00'.
+    ENDIF.
+
+
+    "COLUMNA 14 FECHA DE VENCIMIENTO
+    clear lv_zfbdt.
+
+
+
+
+    CONCATENATE ti_libro-periodo  "01
+                numdoc            "02 número de documento
+                ti_libro-corr3    "03
+                ti_libro-hkont    "04
+                ti_libro-und_ope  "05
+                ceco              "06 centro de costo
+                ti_libro-waers    "07
+                ti_libro-fityp    "08 tipo de documento de identidad del emisor
+                nif               "09 numero de documento de identidad del emisor
+                ti_libro-tp_doc   "10
+                ti_libro-serie    "11
+                ti_libro-comprob  "12 número de comprobante de pago
+                lv_budat          "13
+                lv_zfbdt          "14
+                lv_bldat          "15
+                ti_libro-sgtxt    "16
+                ti_libro-gl_ref   "17
+                lv_debe           "18
+                lv_haber          "19
+                ti_libro-dt_estr  "20
+                ti_libro-estado   "21
+                ''
+           INTO lv_linea SEPARATED BY '|'.
+
+    ti_archivo-linea = lv_linea.
+    APPEND ti_archivo.
+    clear: ti_libro-fityp, nif.
+  ENDLOOP.
+
+  """""" Dialogo Guardar como
+  CLEAR: lv_archi_fl, lv_archi_dw.
+  CONCATENATE 'LE20492134091' $perio '00'
+              '050100001111.txt' INTO
+               lv_archi_fl.
+
+  CALL FUNCTION 'WS_FILENAME_GET'
+    EXPORTING
+      def_filename     = lv_archi_fl
+      def_path         = 'C:\'
+      mask             = '<*.txt>'
+      mode             = 'S'
+      title            = 'Guardar archivo como'
+    IMPORTING
+      filename         = lv_archi_fl
+    EXCEPTIONS
+      inv_winsys       = 1
+      no_batch         = 2
+      selection_cancel = 3
+      selection_error  = 4
+      OTHERS           = 5.
+
+  lv_archi_dw = lv_archi_fl.
+
+  IF sy-subrc = 0.
+    CALL FUNCTION 'GUI_DOWNLOAD'
+      EXPORTING
+*       BIN_FILESIZE                    =
+        filename                        = lv_archi_dw
+        filetype                        = 'ASC'
+*       APPEND                          = ' '
+*       WRITE_FIELD_SEPARATOR           = ' '
+*       HEADER                          = '00'
+*       TRUNC_TRAILING_BLANKS           = ' '
+*       WRITE_LF                        = 'X'
+*       COL_SELECT                      = ' '
+*       COL_SELECT_MASK                 = ' '
+*       DAT_MODE                        = ' '
+*       CONFIRM_OVERWRITE               = ' '
+*       NO_AUTH_CHECK                   = ' '
+*       CODEPAGE                        = ' '
+*       IGNORE_CERR                     = ABAP_TRUE
+*       REPLACEMENT                     = '#'
+*       WRITE_BOM                       = ' '
+*       TRUNC_TRAILING_BLANKS_EOL       = 'X'
+*       WK1_N_FORMAT                    = ' '
+*       WK1_N_SIZE                      = ' '
+*       WK1_T_FORMAT                    = ' '
+*       WK1_T_SIZE                      = ' '
+*       WRITE_LF_AFTER_LAST_LINE        = ABAP_TRUE
+*       SHOW_TRANSFER_STATUS            = ABAP_TRUE
+*     IMPORTING
+*       FILELENGTH                      =
+      TABLES
+        data_tab                        = ti_archivo
+*       FIELDNAMES                      =
+      EXCEPTIONS
+        file_write_error                = 1
+        no_batch                        = 2
+        gui_refuse_filetransfer         = 3
+        invalid_type                    = 4
+        no_authority                    = 5
+        unknown_error                   = 6
+        header_not_allowed              = 7
+        separator_not_allowed           = 8
+        filesize_not_allowed            = 9
+        header_too_long                 = 10
+        dp_error_create                 = 11
+        dp_error_send                   = 12
+        dp_error_write                  = 13
+        unknown_dp_error                = 14
+        access_denied                   = 15
+        dp_out_of_memory                = 16
+        disk_full                       = 17
+        dp_timeout                      = 18
+        file_not_found                  = 19
+        dataprovider_exception          = 20
+        control_flush_error             = 21
+        OTHERS                          = 22.
+
+    IF sy-subrc <> 0.
+      MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+            WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+    ENDIF.
+  ENDIF.
+ENDFORM.                    " ARCHIVO
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  PLAN_CTAS
+*&---------------------------------------------------------------------*
+FORM plan_ctas.
+  REFRESH ti_plan.
+
+  LOOP AT ti_libro.
+    MOVE-CORRESPONDING ti_libro TO ti_plan.
+    MOVE p_perio TO ti_plan-periodo.
+    COLLECT ti_plan.
+  ENDLOOP.
+  SORT ti_plan BY periodo hkont.
+
+  LOOP AT ti_plan.
+    SELECT SINGLE txt50
+      INTO ti_plan-txt50
+      FROM skat
+      WHERE spras = sy-langu
+        AND ktopl = 'CAPE'
+        AND saknr = ti_plan-hkont.
+
+    ti_plan-ktopl = id_plan.
+    ti_plan-d_plan = d_plan.
+    CLEAR: ti_plan-c_cta,
+           ti_plan-d_cta.
+
+    MODIFY ti_plan.
+
+  ENDLOOP.
+
+  EXPORT ti_plan TO MEMORY ID 'Z_PLAN_CTA'.
+  EXPORT p_bukrs TO MEMORY ID 'Z_PLAN_SOC'.
+  EXPORT $perio TO MEMORY ID 'Z_PLAN_ANO'.
+  EXPORT p_perio TO MEMORY ID 'Z_PLAN_FEC'.
+  SUBMIT zfi_librodiario_pe_plancta AND RETURN.
+  FREE MEMORY ID: 'Z_PLAN_CTA', 'Z_PLAN_SOC',
+               'Z_PLAN_ANO', 'Z_PLAN_FEC'.
+ENDFORM.                    " PLAN_CTAS
+
+*&---------------------------------------------------------------------*
+*&      Form  HELP_PERIODO
+*&---------------------------------------------------------------------*
+FORM help_periodo  CHANGING p_perio.
+
+  IF p_perio IS INITIAL.
+    p_perio = sy-datum.
+  ENDIF.
+  CALL FUNCTION 'POPUP_TO_SELECT_MONTH'
+    EXPORTING
+      actual_month               = p_perio
+      language                   = sy-langu
+      start_column               = 20
+      start_row                  = 1
+    IMPORTING
+      selected_month             = p_perio
+    EXCEPTIONS
+      factory_calendar_not_found = 1
+      holiday_calendar_not_found = 2
+      month_not_found            = 3
+      OTHERS                     = 4.
+ENDFORM.                    " HELP_PERIODO
+*&---------------------------------------------------------------------*
+*&      Form  ARMAR_BLART
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM armar_blart .
+  REFRESH: blart_080100,
+           blart_140100,
+           blart_080200.
+
+  blart_080100-sign = 'I'.
+  blart_080100-option = 'EQ'.
+  blart_080100-low = 'KC'. APPEND blart_080100.
+  blart_080100-low = 'KX'. APPEND blart_080100.
+  blart_080100-low = 'KB'. APPEND blart_080100.
+  blart_080100-low = 'KV'. APPEND blart_080100.
+  blart_080100-low = 'BC'. APPEND blart_080100.
+  blart_080100-low = 'BE'. APPEND blart_080100.
+  blart_080100-low = 'K4'. APPEND blart_080100.
+  blart_080100-low = 'K5'. APPEND blart_080100.
+  blart_080100-low = 'KE'. APPEND blart_080100.
+  blart_080100-low = 'KN'. APPEND blart_080100.
+  blart_080100-low = 'KD'. APPEND blart_080100.
+  blart_080100-low = 'KU'. APPEND blart_080100.
+  blart_080100-low = 'RA'. APPEND blart_080100.
+  blart_080100-low = 'PA'. APPEND blart_080100.
+  blart_080100-low = 'MR'. APPEND blart_080100.
+  blart_080100-low = 'BA'. APPEND blart_080100.
+  blart_080100-low = 'KC'. APPEND blart_080100.             "2 VECES
+  blart_080100-low = 'BO'. APPEND blart_080100.
+  blart_080100-low = 'KP'. APPEND blart_080100.
+  blart_080100-low = 'BL'. APPEND blart_080100.
+  blart_080100-low = 'NH'. APPEND blart_080100.
+  blart_080100-low = 'SE'. APPEND blart_080100.
+  blart_080100-low = 'RV'. APPEND blart_080100.
+  blart_080100-low = 'KS'. APPEND blart_080100.
+  blart_080100-low = 'IS'. APPEND blart_080100.
+  blart_080100-low = 'KD'. APPEND blart_080100.             "2 VECES
+  blart_080100-low = 'KN'. APPEND blart_080100.             "2 VECES
+  blart_080100-low = 'K8'. APPEND blart_080100.
+
+  blart_080200-sign = 'I'.
+  blart_080200-option = 'EQ'.
+  blart_080200-low = 'K6'. APPEND blart_080200.
+  blart_080200-low = 'K7'. APPEND blart_080200.
+  blart_080200-low = 'K8'. APPEND blart_080200.
+  blart_080200-low = 'KG'. APPEND blart_080200.
+
+*“KC”; “KX”; “KB”;”KV”;”BC”,”BE”, “K5”,”KE”,”KN”,”KD”
+*,”KU”,”RA”,”MR”,”BA”,”KC”,”BO”,”KP”,”BL”,”NH”,”SE”,
+*”RV”,”KS”,”IS”,”KD”,”KN”,”K8”
+
+*******************
+  blart_140100-sign = 'I'.
+  blart_140100-option = 'EQ'.
+  blart_140100-low = 'DF'. APPEND blart_140100.
+  blart_140100-low = 'BV'. APPEND blart_140100.
+  blart_140100-low = 'DN'. APPEND blart_140100.
+  blart_140100-low = 'DQ'. APPEND blart_140100.
+*= “DF”,”BV”,”DN”,”DQ”
+ENDFORM.                    " ARMAR_BLART
+*&---------------------------------------------------------------------*
+*&      Form  T003_I
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_TI_BSAK_BLART  text
+*      <--P_TI_LIBRO2_TP_DOC  text
+*----------------------------------------------------------------------*
+FORM T003_I  USING    P_TI_BSAK_BLART
+             CHANGING P_TI_LIBRO2_TP_DOC.
+
+
+
+ENDFORM.                                                    " T003_I
+*&---------------------------------------------------------------------*
+*&      Form  ARMAR_SERV_BASICOS
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM ARMAR_SERV_BASICOS .
+
+  REFRESH: serv_basicos.
+
+  serv_basicos-sign = 'I'.
+  serv_basicos-option = 'EQ'.
+  serv_basicos-low = '2042869856'. APPEND serv_basicos.
+  serv_basicos-low = '2010001749'. APPEND serv_basicos.
+  serv_basicos-low = '2033189800'. APPEND serv_basicos.
+  serv_basicos-low = '2010689791'. APPEND serv_basicos.
+  serv_basicos-low = '2010015235'. APPEND serv_basicos.
+  serv_basicos-low = '2047100000'. APPEND serv_basicos.
+  serv_basicos-low = '2010017777'. APPEND serv_basicos.
+
+ENDFORM.                    " ARMAR_SERV_BASICOS
+*&---------------------------------------------------------------------*
+*&      Form  BUDAT1
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_TI_DATOS_BUDAT  text
+*      <--P_TI_LIBRO_COMPROB  text
+*----------------------------------------------------------------------*
+FORM BUDAT1  USING    P_TI_DATOS_BUDAT
+             CHANGING P_TI_LIBRO_COMPROB.
+
+  CONCATENATE P_TI_DATOS_BUDAT+6(2)  "12
+              P_TI_DATOS_BUDAT+4(2)
+              P_TI_DATOS_BUDAT+2(2)
+              INTO P_TI_LIBRO_COMPROB.
+
+ENDFORM.                                                    " BUDAT1
+*&---------------------------------------------------------------------*
+*&      Form  T003I
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_TI_DATOS_BLART  text
+*      <--P_TI_LIBRO_TP_DOC  text
+*----------------------------------------------------------------------*
+FORM T003I  USING    P_TI_DATOS_BLART
+            CHANGING P_TI_LIBRO_TP_DOC.
+
+  DATA: ZDOCCLS LIKE T003_I-DOCCLS.
+
+  select single DOCCLS INTO ZDOCCLS FROM T003_I where LAND1 = 'PE' and
+                                                      BLART = P_TI_DATOS_BLART.
+
+  IF sy-subrc = 0.
+    P_TI_LIBRO_TP_DOC = ZDOCCLS.
+
+    CALL FUNCTION 'CONVERSION_EXIT_ALPHA_INPUT'
+      EXPORTING
+        input  = P_TI_LIBRO_TP_DOC
+      IMPORTING
+        output = P_TI_LIBRO_TP_DOC.
+  ELSE.
+    CLEAR P_TI_LIBRO_TP_DOC.
+  ENDIF.
+
+
+ENDFORM.                                                    " T003I
+*&---------------------------------------------------------------------*
+*&      Form  BUDAT2
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_TI_BSAK_BUDAT  text
+*      <--P_TI_LIBRO_BUDAT_X  text
+*----------------------------------------------------------------------*
+FORM BUDAT2  USING    P_TI_BSAK_BUDAT
+             CHANGING P_TI_LIBRO_BUDAT_X.
+
+  CONCATENATE P_TI_BSAK_BUDAT+6(2) '/'
+              P_TI_BSAK_BUDAT+4(2) '/'
+              P_TI_BSAK_BUDAT+0(4)
+  INTO P_TI_LIBRO_BUDAT_X.
+
+ENDFORM.                                                    " BUDAT2
+*&---------------------------------------------------------------------*
+*&      Form  REFERENCIA
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_TI_DATOS_BLART  text
+*      <--P_TIP  text
+*      <--P_TI_LIBRO_SERIE  text
+*      <--P_TI_LIBRO_COMPROB  text
+*----------------------------------------------------------------------*
+FORM REFERENCIA  USING    P_TI_DATOS_BLART
+                          P_TI_DATOS-XBLNR
+                 CHANGING P_TIP
+                          P_TI_LIBRO_SERIE
+                          P_TI_LIBRO_COMPROB.
+
+  DATA lv_largo TYPE i.
+  CLEAR: lv_largo, P_TIP.
+
+  CASE P_TI_DATOS_BLART.
+    WHEN 'BC' or 'BE' or 'KV' OR 'RA' OR 'MR' OR 'BA' OR 'BO' OR
+       'KN' OR 'KP' OR 'RV' OR 'K4'
+                                                            "OR 'K7'
+       OR 'BL'.
+      split P_TI_DATOS-XBLNR AT '-' INTO
+          P_TI_LIBRO_SERIE P_TI_LIBRO_COMPROB.
+
+    when 'K7'.
+      split P_TI_DATOS-XBLNR AT '-' INTO
+            P_TI_LIBRO_SERIE P_TI_LIBRO_COMPROB.
+
+
+    when 'IS'.
+      P_TI_LIBRO_SERIE   = P_TI_DATOS-XBLNR+0(3).
+      P_TI_LIBRO_COMPROB = P_TI_DATOS-XBLNR+4.
+
+    WHEN 'KB' OR 'KD' OR 'KE' OR 'KR' OR 'KX' OR 'K6'.
+      lv_largo = STRLEN( P_TI_DATOS-XBLNR ).
+      IF lv_largo < 7.
+        P_TI_LIBRO_COMPROB = P_TI_DATOS-XBLNR.
+      ELSE.
+        lv_largo = lv_largo - 7.
+        P_TI_LIBRO_COMPROB = P_TI_DATOS-XBLNR+lv_largo(7).
+      ENDIF.
+
+    WHEN 'KC' . "01
+      split P_TI_DATOS-XBLNR AT '-' INTO
+            P_TI_LIBRO_SERIE P_TI_LIBRO_COMPROB.
+
+
+    WHEN 'DW' .
+      split P_TI_DATOS-XBLNR AT '-' INTO
+            P_TIP P_TI_LIBRO_SERIE P_TI_LIBRO_COMPROB.
+
+      lv_largo = STRLEN( P_TI_DATOS-XBLNR ).
+      IF lv_largo < 6.
+        P_TI_LIBRO_COMPROB = P_TI_DATOS-XBLNR.
+      ELSE.
+        lv_largo = lv_largo - 6.
+        P_TI_LIBRO_COMPROB = P_TI_DATOS-XBLNR+lv_largo(6).
+      ENDIF.
+    WHEN 'KS' .
+      lv_largo = STRLEN( P_TI_DATOS-XBLNR ).
+      IF lv_largo < 5.
+        clear  P_TI_LIBRO_COMPROB.
+      ELSE.
+        P_TI_LIBRO_COMPROB = P_TI_DATOS-XBLNR+4(12).
+      ENDIF.
+    WHEN 'K5' .
+      lv_largo = STRLEN( P_TI_DATOS-XBLNR ).
+      IF lv_largo < 3.
+        clear P_TI_LIBRO_COMPROB.
+      ELSE.
+        P_TI_LIBRO_COMPROB = P_TI_DATOS-XBLNR+2(14).
+      ENDIF.
+
+    WHEN 'DE' OR 'DQ' OR 'D1'.
+      lv_largo = STRLEN( P_TI_DATOS-XBLNR ).
+      IF lv_largo < 7.
+        P_TI_LIBRO_COMPROB = P_TI_DATOS-XBLNR.
+      ELSE.
+        lv_largo = lv_largo - 7.
+        P_TI_LIBRO_COMPROB = P_TI_DATOS-XBLNR+lv_largo(7).
+      ENDIF.
+    WHEN 'DF' OR 'ND' OR 'DN'.
+      lv_largo = STRLEN( P_TI_DATOS-XBLNR ).
+      IF lv_largo < 7.
+        P_TI_LIBRO_COMPROB = P_TI_DATOS-XBLNR.
+      ELSE.
+        lv_largo = lv_largo - 7.
+        P_TI_LIBRO_COMPROB = P_TI_DATOS-XBLNR+lv_largo(7).
+      ENDIF.
+    when 'WA'.
+      P_TI_LIBRO_COMPROB = P_TI_DATOS-XBLNR+9(7).
+    when 'WE'.
+      P_TI_LIBRO_COMPROB = P_TI_DATOS-XBLNR+8(8).
+    WHEN OTHERS.
+      P_TI_LIBRO_COMPROB = ''.
+  ENDCASE.
+
+
+  CASE P_TI_DATOS_BLART.
+    WHEN 'BC' or 'BE' or 'KV' OR 'RA' OR 'MR' OR 'BA' OR 'BO' OR
+       'KN' OR 'KP' OR 'RV' OR 'K4'
+*        OR 'K7'
+      OR 'BL'.
+      split P_TI_DATOS-XBLNR AT '-' INTO
+              P_TI_LIBRO_SERIE P_TI_LIBRO_COMPROB.
+*        ti_libro-serie = ti_datos-xblnr+0(4).
+    when 'K7'.
+      split P_TI_DATOS-XBLNR AT '-' INTO
+            P_TI_LIBRO_SERIE P_TI_LIBRO_COMPROB.
+    when 'IS'.
+      P_TI_LIBRO_SERIE   = P_TI_DATOS-XBLNR+0(3).
+      P_TI_LIBRO_COMPROB = P_TI_DATOS-XBLNR+4.
+
+    WHEN 'KC' . "01
+
+    WHEN 'KB' OR 'KD' OR 'KE' OR 'KR' OR 'KX' or 'BL' or 'K6'.
+      "primeros 4 caract.
+      P_TI_LIBRO_SERIE = P_TI_DATOS-XBLNR+0(4).
+    WHEN 'KS' .
+      "primeros 3 caract
+      P_TI_LIBRO_SERIE = P_TI_DATOS-XBLNR+0(3).
+
+    WHEN 'K5' or 'KS' .
+      "primeros 3 caract
+      P_TI_LIBRO_SERIE = P_TI_DATOS-XBLNR+0(1).
+
+    WHEN 'DE' OR 'DQ' OR  'DF' OR 'ND' OR 'DN' OR 'D1'.
+      "desde posicion 4 los sgtes 4.
+      P_TI_LIBRO_SERIE   = P_TI_DATOS-XBLNR+4(4).
+
+    when 'DW'.
+      CONCATENATE '0' P_TI_LIBRO_SERIE into P_TI_LIBRO_SERIE.
+
+    when 'WA'.
+      P_TI_LIBRO_SERIE   = P_TI_DATOS-XBLNR+0(3).
+
+    when 'WE'. "entrada de mercadería
+      P_TI_LIBRO_SERIE   = P_TI_DATOS-XBLNR+4(3).
+    WHEN OTHERS.
+      P_TI_LIBRO_SERIE   = ''.
+  ENDCASE.
+
+
+ENDFORM.                    " REFERENCIA
+*&---------------------------------------------------------------------*
+*&      Form  ARRASTRE
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM ARRASTRE .
+
+*Obtener las cuentas contables
+
+  SELECT * INTO CORRESPONDING FIELDS OF TABLE it_cab
+     FROM skat
+     WHERE spras EQ 'S'       AND
+           ktopl EQ 'CAPE'.
+
+
+*Obtener el saldo inicial de la cuenta
+  DATA: lvd_cont(2), lvd_xkres.
+  DATA: ind TYPE sy-tabix.
+
+  LOOP AT it_cab.
+    clear: ind.
+    MOVE sy-tabix TO ind.
+
+    REFRESH: gtd_account_balances.
+    CALL FUNCTION 'BAPI_GL_GETGLACCPERIODBALANCES'
+      EXPORTING
+        companycode             = p_bukrs
+        glacct                  = it_cab-SAKNR
+        fiscalyear              = $perio+2(4)
+        currencytype            = '10'
+      IMPORTING
+        balance_carried_forward = gvd_balance_carried_forward
+        return                  = gtd_return
+      TABLES
+        account_balances        = gtd_account_balances.
+
+    IF gtd_account_balances[] is initial.
+      DELETE it_cab index ind.
+      CONTINUE.
+    ELSE.
+    ENDIF.
+
+    MODIFY it_cab.
+
+  ENDLOOP.
+
+
+
+ENDFORM.                    " ARRASTRE
