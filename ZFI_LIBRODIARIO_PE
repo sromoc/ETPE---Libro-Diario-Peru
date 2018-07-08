@@ -9,9 +9,6 @@ RANGES: blart_080100 FOR bkpf-blart.
 RANGES: blart_080200 FOR bkpf-blart.
 RANGES: serv_basicos FOR bsak-lifnr.
 
-"DATA
-"fecha
-
 DATA: docum(10).
 RANGES: blart_140100 FOR bkpf-blart.
 TYPE-POOLS slis.
